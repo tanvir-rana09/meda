@@ -1,9 +1,11 @@
-import apiErrorResponse from "../utils/apiErrorResponse";
+import apiErrorResponse from "../utils/apiErrorResponse.js";
 
 const errorHandler = (err, req, res, next) => {
+    // Ensure statusCode and message have default values
     const statusCode = err.statusCode || 500;
-    const message = err.message || "Internal server error";
+    const message = err.message || "Internal Server Error";
     const details = err.details || null;
+    
 
     // check if the error is an instance of apiErrorResponse
     if (err instanceof apiErrorResponse) {
@@ -25,4 +27,4 @@ const errorHandler = (err, req, res, next) => {
     );
 };
 
-export default errorHandler
+export default errorHandler;
