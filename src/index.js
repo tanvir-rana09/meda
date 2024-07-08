@@ -1,7 +1,7 @@
 import connectDB from "./db/Database.js";
 import app from "./app.js";
 import "dotenv/config";
-
+import "./config/passport.js";
 
 (async () => {
     try {

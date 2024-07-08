@@ -4,7 +4,6 @@ import errorHandler from "./middleware/errorHandler.js";
 import passport from "passport";
 import session from "express-session";
 import User from "./models/userModel.js";
-
 // import all routes
 import {
     userRouter,
@@ -14,33 +13,30 @@ import {
     administratorRouter,
 } from "./routes/index.js";
 import cookieParser from "cookie-parser";
+import "./config/passport.js"
 
-// intialize express app
+// initialize express app
 const app = express();
 
 // middlewares
-app.use(cors({ credentials: true }));
+app.use(express.json());
+app.use(cors({credentials:true}));
 app.use(cookieParser());
 app.use(express.static("public"));
-app.use(express.json());
 app.use(express.urlencoded({ extended: true, limit: "20kb" }));
 
 // express session middleware
 app.use(
     session({
-        secret: "secret",
+        secret: process.env.SESSION_SECRET || "secret",
         resave: false,
         saveUninitialized: false,
     })
 );
 
-//passport middleware
-app.use(passport.authenticate("session"));
-app.use(passport.session());
+// passport middlewares
 app.use(passport.initialize());
-
-// coustom error handle middleware
-app.use(errorHandler);
+app.use(passport.session());
 
 // passport serialize
 passport.serializeUser(function (user, done) {
@@ -54,11 +50,14 @@ passport.deserializeUser(function (id, done) {
     });
 });
 
-// route middleware
+// route middlewares
 app.use("/api/v1/user", userRouter);
 app.use("/api/v1/notice", noticeRoute);
 app.use("/api/v1/image", imageRouter);
 app.use("/api/v1/event", eventRouter);
 app.use("/api/v1/administrators", administratorRouter);
+
+// custom error handling middleware (should be last)
+app.use(errorHandler);
 
 export default app;

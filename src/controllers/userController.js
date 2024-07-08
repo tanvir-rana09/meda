@@ -3,17 +3,13 @@ import apiSuccessResponse from "../utils/apiSuccessResponse.js";
 import apiErrorResponse from "../utils/apiErrorResponse.js";
 import User from "../models/userModel.js";
 import { fileUploadonCloudinary } from "../middleware/Cloudinary.js";
+import jwt from "jsonwebtoken";
+import passport from "passport";
 import bcrypt from "bcryptjs";
-
-const options = {
-    httpsOnly: true,
-    secure: true,
-    sameSite: "None",
-};
 
 const signup = asyncHandler(async (req, res) => {
     try {
-        const { email, password, name, username } = req.body;
+        const { email, password, name, username } = await req.body;
 
         // check all field that no one is empty
         if (
@@ -24,7 +20,7 @@ const signup = asyncHandler(async (req, res) => {
             throw new apiErrorResponse(400, "All field is required");
         }
 
-        const user = await User.findOne({
+        const user = await User.findOne({ 
             $or: [{ username }, { email }],
         });
 
@@ -34,19 +30,16 @@ const signup = asyncHandler(async (req, res) => {
 
         let profileUrl;
         if (req.file && req.file?.path) {
-
             profileUrl = await fileUploadonCloudinary(req.file?.path);
-            profileUrl = profileUrl?.url || process.env.PROFILE
+            profileUrl = profileUrl?.url || process.env.PROFILE;
         }
 
-        const salt = await bcrypt.genSalt(10);
-        const hashedPassword = await bcrypt.hash(password, salt);
-        console.log(profileUrl);
+        const h = bcrypt.hashSync(password, 10);
         const newUser = await User.create({
             name,
             email,
             username,
-            password: hashedPassword,
+            password: h,
             profile: profileUrl,
         });
 
@@ -71,6 +64,28 @@ const signup = asyncHandler(async (req, res) => {
     }
 });
 
-const login = asyncHandler(async () => {});
+const login = asyncHandler(async (req, res, next) => {
+    try {
+        passport.authenticate(
+            "local",
+            { session: false },
+            (err, user, info) => {
+                if (err || !user) {
+                    return res
+                        .status(400)
+                        .json({ message: "invalid creadentials 2", user });
+                }
+                const token = jwt.sign(
+                    { id: user._id },
+                    process.env.JWT_SECRET,
+                    { expiresIn: "1h" }
+                );
+                return res.json({ user, token });
+            }
+        )(req, res, next);
+    } catch (error) {
+        console.log(error);
+    }
+});
 
-export { signup };
+export { signup, login };
